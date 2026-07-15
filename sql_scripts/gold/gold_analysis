@@ -1,0 +1,61 @@
+/* =============================================================================
+   Script:   05_gold_analysis.sql
+   Purpose:  Analytical queries run on top of the Silver layer to answer
+             business questions about the largest tech companies across
+             2021, 2023, and 2025.
+   ============================================================================= */
+
+USE Warehouse;
+GO
+
+-- =========================================================================
+-- Q1: Which companies appear in the top list every single year (2021,
+--     2023, and 2025)? Ranked by their most recent (2021) revenue.
+-- =========================================================================
+SELECT
+    s.company
+FROM silver.company_info_2021 AS s
+JOIN silver.company_info_2023 AS c
+    ON s.company = c.company
+JOIN silver.company_info_2025 AS p
+    ON s.company = p.company
+ORDER BY s.revenue_billion DESC;
+GO
+
+-- =========================================================================
+-- Q2: How many companies from the top list are headquartered in each
+--     country, per year? (side-by-side comparison across all three years)
+-- =========================================================================
+SELECT DISTINCT
+    s.country,
+    COUNT(s.country) OVER (PARTITION BY s.country) AS country_wise2021,
+    c.country,
+    COUNT(c.country) OVER (PARTITION BY c.country) AS country_wise2023,
+    p.country,
+    COUNT(p.country) OVER (PARTITION BY p.country) AS country_wise2025
+FROM silver.company_info_2021 AS s
+FULL JOIN silver.company_info_2023 AS c
+    ON s.company = c.company
+JOIN silver.company_info_2025 AS p
+    ON s.company = p.company;
+GO
+
+-- =========================================================================
+-- Q3: What is the combined and average revenue of all listed companies,
+--     for each of the three years?
+-- =========================================================================
+SELECT
+    SUM(revenue_billion) AS combined_revenue,
+    AVG(revenue_billion) AS average_revenue
+FROM silver.company_info_2021
+UNION
+SELECT
+    SUM(revenue_billion),
+    AVG(revenue_billion)
+FROM silver.company_info_2023
+UNION
+SELECT
+    SUM(revenue_billion),
+    AVG(revenue_billion)
+FROM silver.company_info_2025;
+GO
