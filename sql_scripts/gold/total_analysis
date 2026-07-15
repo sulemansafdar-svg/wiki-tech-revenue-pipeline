@@ -1,0 +1,53 @@
+/* =============================================================================
+   Script:   06_total_revenue_by_company.sql
+   Purpose:  Combine all three yearly tables into one dataset and calculate
+             each company's total revenue summed across the years present.
+
+   ⚠ POSSIBLE BUG (kept as-is from the original query, flagging for you):
+     The third SELECT in the UNION ALL below pulls from
+     silver.company_info_2023 again instead of silver.company_info_2025.
+     This means the "combined" dataset currently includes 2023 data twice
+     and never includes 2025 data at all. If that wasn't intentional, change
+     the last "FROM silver.company_info_2023" to
+     "FROM silver.company_info_2025".
+   ============================================================================= */
+
+USE Warehouse;
+GO
+
+WITH combined AS (
+    SELECT
+        company,
+        revenue_billion,
+        employees,
+        country,
+        headquarters
+    FROM silver.company_info_2021
+
+    UNION ALL
+
+    SELECT
+        company,
+        revenue_billion,
+        employees,
+        country,
+        headquarters
+    FROM silver.company_info_2023
+
+    UNION ALL
+
+    -- See bug note above: this currently duplicates 2023 instead of adding 2025
+    SELECT
+        company,
+        revenue_billion,
+        employees,
+        country,
+        headquarters
+    FROM silver.company_info_2023
+)
+SELECT
+    company,
+    SUM(revenue_billion) AS total_revenue
+FROM combined
+GROUP BY company;
+GO
